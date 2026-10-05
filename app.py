@@ -2,7 +2,7 @@ import os
 import time
 
 import streamlit as st
-
+from dotenv import load_dotenv
 from core.extractor import extraer_requisitos
 from core.lector import CVError, leer_cv
 from llm_client import (
@@ -13,7 +13,7 @@ from llm_client import (
     modelos_ollama,
     modelos_groq,
 )
-
+load_dotenv()
 MAX_OFERTA = 5000  # caracteres; protege el contexto de modelos pequeños
 
 PROVEEDORES = {
@@ -60,12 +60,17 @@ def configurar_modelo():
             timeout_defecto = 600
         else:
             base_url = p["base_url"]
-            api_key = st.text_input(
-                "API key",
-                value=os.getenv(p["env_key"], os.getenv("LLM_API_KEY", "")),
-                type="password",
-                help="Solo se guarda en esta sesión, no en disco.",
-            )
+            api_key = os.getenv(p["env_key"], os.getenv("LLM_API_KEY", ""))
+            timeout_defecto = 120
+
+            if api_key:
+                st.caption("🔑 API key cargada desde .env")
+            else:
+                api_key = st.text_input(
+                    "API key",
+                    type="password",
+                    help=f"No encontré {p['env_key']} en .env. Solo se guarda en esta sesión.",
+                )
             timeout_defecto = 120
 
             if nombre == "Groq":
