@@ -5,7 +5,14 @@ import streamlit as st
 
 from core.extractor import extraer_requisitos
 from core.lector import CVError, leer_cv
-from llm_client import CONFIG_POR_DEFECTO, Config, LLMError, generar, modelos_ollama
+from llm_client import (
+    CONFIG_POR_DEFECTO,
+    Config,
+    LLMError,
+    generar,
+    modelos_ollama,
+    modelos_groq,
+)
 
 MAX_OFERTA = 5000  # caracteres; protege el contexto de modelos pequeños
 
@@ -18,18 +25,14 @@ PROVEEDORES = {
         "proveedor": "openai",
         "base_url": "https://api.groq.com/openai/v1",
         "env_key": "GROQ_API_KEY",
-        "modelos": [
-            "llama-3.3-70b-versatile",
-            "openai/gpt-oss-120b",
-            "qwen/qwen3-32b",
-            "llama-3.1-8b-instant",
-        ],
     },
     "OpenRouter": {
         "proveedor": "openai",
         "base_url": "https://openrouter.ai/api/v1",
         "env_key": "OPENROUTER_API_KEY",
-        "modelos": ["google/gemini-3.8-flash"],
+        "modelos": [
+            "google/gemini-3.8-flash",
+        ],
     },
 }
 
@@ -57,9 +60,6 @@ def configurar_modelo():
             timeout_defecto = 600
         else:
             base_url = p["base_url"]
-            opciones = p["modelos"] + ["Otro..."]
-            elegido = st.selectbox("Modelo", opciones)
-            modelo = st.text_input("Nombre del modelo") if elegido == "Otro..." else elegido
             api_key = st.text_input(
                 "API key",
                 value=os.getenv(p["env_key"], os.getenv("LLM_API_KEY", "")),
@@ -67,6 +67,19 @@ def configurar_modelo():
                 help="Solo se guarda en esta sesión, no en disco.",
             )
             timeout_defecto = 120
+
+            if nombre == "Groq":
+                modelos = modelos_groq(api_key, base_url) if api_key.strip() else []
+                if modelos:
+                    indice = modelos.index(base.modelo) if base.modelo in modelos else 0
+                    modelo = st.selectbox("Modelo disponible en Groq", modelos, index=indice)
+                else:
+                    st.warning("No pude obtener los modelos de Groq. Comprueba la API key.")
+                    modelo = st.text_input("Nombre del modelo", value="openai/gpt-oss-20b")
+            elif p.get("modelos"):
+                modelo = st.selectbox("Modelo", p["modelos"])
+            else:
+                modelo = st.text_input("Nombre del modelo", value=base.modelo)
 
         timeout = st.number_input("Tiempo máximo (segundos)", 30, 1800, timeout_defecto, step=30)
         cfg = Config(
