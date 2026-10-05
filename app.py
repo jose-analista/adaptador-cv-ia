@@ -61,7 +61,7 @@ def configurar_modelo():
         else:
             base_url = p["base_url"]
             api_key = os.getenv(p["env_key"], os.getenv("LLM_API_KEY", ""))
-            timeout_defecto = 120
+        
 
             if api_key:
                 st.caption("🔑 API key cargada desde .env")
