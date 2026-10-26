@@ -1,4 +1,4 @@
-from llm_client import generar_json
+from llm_client import generar_json, CONFIG_POR_DEFECTO
 
 PROMPT = """Eres un analista de selección de personal. Lee la oferta laboral y extrae sus requisitos.
 
@@ -26,15 +26,24 @@ def _lista_de_textos(valor):
     return [str(x).strip() for x in valor if str(x).strip()]
 
 
-def extraer_requisitos(oferta, config=None):
-    """Devuelve {'puesto': str, 'obligatorios': [..], 'deseables': [..]}."""
-    datos = generar_json(
-        PROMPT.format(oferta=oferta.strip()),
-        claves=["obligatorios", "deseables"],
-        config=config,
+def extraer_requisitos(texto_cv: str, texto_oferta: str) -> dict:
+    prompt = f"""
+    Analiza el siguiente CV y la oferta de trabajo.
+    Responde ÚNICAMENTE con un objeto JSON válido con este formato exacto:
+    {{
+      "empresa": "Nombre de la empresa",
+      "puesto": "Título del puesto",
+      "match_score": 75,
+      "puntos_fuertes": ["Experiencia en Python", "Gestión de equipos"]
+    }}
+
+    CV: {texto_cv[:1500]}
+    OFERTA: {texto_oferta[:1500]}
+    """
+    
+    # ✅ CORRECTO: Usar generar_json pasando el objeto CONFIG_POR_DEFECTO
+    return generar_json(
+        prompt=prompt,
+        claves=["empresa", "puesto", "match_score", "puntos_fuertes"],
+        config=CONFIG_POR_DEFECTO 
     )
-    return {
-        "puesto": str(datos.get("puesto", "")).strip(),
-        "obligatorios": _lista_de_textos(datos["obligatorios"]),
-        "deseables": _lista_de_textos(datos["deseables"]),
-    }
